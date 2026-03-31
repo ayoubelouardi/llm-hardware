@@ -12,6 +12,19 @@ window.switchMode = function(i) {
   }
 }
 
+// ===== CONTEXT LENGTH =====
+window.setContext = function(ctx) {
+  window.contextLength = parseInt(ctx, 10);
+  // Re-render hardware mode if visible
+  if (document.getElementById("hpanel") && document.getElementById("hpanel").style.display !== "none") {
+    renderHardware();
+  }
+  // Re-render model mode if a model is selected
+  if (window._lastM) {
+    doAnalysis(window._lastM);
+  }
+};
+
 renderHardware();
 
 // ===== SOCIAL SHARING =====

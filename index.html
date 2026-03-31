@@ -32,6 +32,17 @@ if(location.protocol!=='file:'&&location.pathname!=='/'&&location.pathname!=='/i
   <div class="hdr" style="text-align:center;margin-bottom:2rem">
     <div class="site-title" style="font-size:72px;letter-spacing:-2px">LLM HARDWARE</div>
     <div class="site-sub" style="font-size:16px;letter-spacing:0.12em">Search local LLM hardware requirements</div>
+    <div class="ctx-selector" style="margin-top:12px">
+      <label style="font-size:11px;color:var(--text-muted);letter-spacing:0.06em;margin-right:8px">CONTEXT:</label>
+      <select id="ctxSelect" onchange="setContext(this.value)" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer">
+        <option value="4096">4K tokens</option>
+        <option value="8192">8K tokens</option>
+        <option value="16384">16K tokens</option>
+        <option value="32768">32K tokens</option>
+        <option value="65536">64K tokens</option>
+        <option value="131072">128K tokens</option>
+      </select>
+    </div>
   </div>
 
   <div style="font-size:11px;color:var(--gray-light);letter-spacing:0.06em;margin-bottom:10px" id="mcount"></div>
