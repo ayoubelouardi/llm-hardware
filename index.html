@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<script>
+if(location.protocol==='http:'&&location.hostname!=='localhost'&&location.hostname!=='127.0.0.1')location.replace('https://'+location.host+location.pathname+location.search);
+if(location.protocol!=='file:'&&location.pathname!=='/'&&location.pathname!=='/index.html')location.replace('/');
+</script>
+<title>Search Local LLM Hardware Requirements</title>
+<meta name="description" content="Find out exactly what hardware you need to run any local LLM, image, video, or audio AI model. 275+ models with full build specs, performance estimates, and Amazon links.">
+<meta property="og:title" content="Local AI Hardware Requirements">
+<meta property="og:description" content="Find out exactly what hardware you need to run any local LLM, image, video, or audio AI model. 275+ models with full build specs and performance estimates.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://example.com">
+<meta property="og:image" content="https://example.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Local AI Hardware Requirements">
+<meta name="twitter:description" content="275+ local AI models with full build specs, VRAM requirements, and performance estimates.">
+<meta name="twitter:image" content="https://example.com/og-image.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=10">
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hdr" style="text-align:center;margin-bottom:2rem">
+    <div class="site-title" style="font-size:72px;letter-spacing:-2px">LLM HARDWARE</div>
+    <div class="site-sub" style="font-size:16px;letter-spacing:0.12em">Search local LLM hardware requirements</div>
+  </div>
+
+  <div style="font-size:11px;color:var(--gray-light);letter-spacing:0.06em;margin-bottom:10px" id="mcount"></div>
+
+  <div class="mode-toggle">
+    <button class="mode-btn on" onclick="switchMode(0)">
+      I have hardware<br>What can I run?
+    </button>
+    <button class="mode-btn" onclick="switchMode(1)">
+      I have a model<br>What do I need?
+    </button>
+  </div>
+
+  <div id="hpanel"></div>
+  <div id="mpanel" style="display:none"></div>
+
+</div>
+
+<!-- Scripts loaded in dependency order -->
+<script src="js/data.js?v=10"></script>
+<script src="js/core.js?v=10"></script>
+<script src="js/hardware.js?v=10"></script>
+<script src="js/model.js?v=10"></script>
+<script src="js/perf.js?v=10"></script>
+<script src="js/pdf.js?v=10"></script>
+<script src="js/modal.js?v=10"></script>
+<script src="js/app.js?v=10"></script>
+</body>
+</html>
