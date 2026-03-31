@@ -15,7 +15,8 @@ A zero-dependency, client-only SPA that tells you what hardware you need for 275
     ├── perf.js         # 5. Live performance estimation updates
     ├── pdf.js          # 6. Spec sheet PDF via print window
     ├── modal.js        # 7. Contact form modal
-    └── app.js          # 8. Init, mode switching, social sharing
+    ├── app.js          # 8. Init, mode switching, context selector, social sharing
+    └── validation.js    # Test suite (run with `node js/validation.js`)
 ```
 
 Scripts load in dependency order at the bottom of `index.html`. Each file adds functions to `window`.
@@ -45,10 +46,10 @@ Every model is a plain object with 7 fields:
 
 ### Hardware Data (`BUILDS` object in `model.js`)
 
-Pre-defined components with pricing and Amazon search queries:
+Pre-defined components with pricing, Amazon search queries, and TFLOPS:
 
 ```js
-BUILDS.gpus   // 50+ GPUs: {name, v(GB), type, bw(GB/s), pr($), q(search)}
+BUILDS.gpus   // 50+ GPUs: {name, v(GB), type, bw(GB/s), tf(TFLOPS), pr($), q(search)}
 BUILDS.cpus   // 5 CPUs: {name, tier(0-4), pr, q}
 BUILDS.ram    // 5 kits: {name, gb, pr, q}
 BUILDS.storage// 3 SSDs: {name, tb, pr, q}
@@ -109,17 +110,16 @@ CPU only:        40 GB/s (DDR4/DDR5 average)
 
 ### TPS Calculation (`getTPS` in `core.js`)
 
+**MoE Update**: MoE models now use only active params for TPS. All weights must fit in VRAM, but inference throughput scales with active params:
+
 ```js
 function getTPS(vramOrBw, gpuType, pb, isBandwidth, totalPb) {
   const bwGBs = isBandwidth ? vramOrBw : estimateBandwidth(vramOrBw, gpuType);
   const bytesPerParam = 0.6;     // Q4 baseline
   const overhead = 1.15;         // KV cache, attention, etc.
 
-  // MoE: effective params = active + 80% of inactive (scattered in memory)
-  let effectivePb = pb;
-  if (totalPb && totalPb > pb * 1.5) {
-    effectivePb = pb + (totalPb - pb) * 0.8;
-  }
+  // MoE: only active params determine generation speed
+  const effectivePb = pb;
 
   const rawTPS = bwGBs / (effectivePb * bytesPerParam * overhead);
 
@@ -131,6 +131,19 @@ function getTPS(vramOrBw, gpuType, pb, isBandwidth, totalPb) {
 }
 ```
 
+### KV Cache VRAM (`calcKvVram` in `core.js`)
+
+Dynamic KV cache allocation based on context length. Formula:
+
+```
+KV_VRAM = (params_B / 8) * (context / 1000) * 0.012 GB
+```
+
+Example:
+- 8B model at 4K context: 0.048 GB
+- 8B model at 32K context: 0.384 GB
+- 70B model at 128K context: ~13.8 GB
+
 ### Compatibility Check (`compat` in `core.js`)
 
 The main function that answers "can this model run on this hardware?" Returns `{s: "yes"|"slow"|"no", tps: number}`.
@@ -139,15 +152,19 @@ The main function that answers "can this model run on this hardware?" Returns `{
 
 1. **Non-quantizable models** (image/video/audio/embed/3D): Simple fit check. VRAM need = `m.vram × backend.vramMult`. If VRAM fits → `"yes"`, else → `"no"`. No TPS calculated.
 
-2. **Unified memory** (Apple Silicon, AMD APU, NVIDIA DGX): Single memory pool. If `vram >= need` → `"yes"` with TPS. No CPU offload possible.
+2. **Unified memory** (Apple Silicon, AMD APU, NVIDIA DGX): Single memory pool. If `vram >= need + kvVram` → `"yes"` with TPS. No CPU offload possible.
 
-3. **Discrete GPU — fits in VRAM**: If `vram >= need && ram >= m.ram` → `"yes"` with full GPU TPS.
+3. **Discrete GPU — fits in VRAM**: If `availableVram >= need && ram >= m.ram` → `"yes"` with full GPU TPS. `availableVram = vram - kvVram`.
 
-4. **Discrete GPU — CPU offload**: If `vram + ram >= need + 4` (4GB OS overhead) → `"slow"` with blended TPS:
+4. **Discrete GPU — CPU offload**: If `vram + ram >= need + 4` (4GB OS overhead) → `"slow"` with **harmonic mean** bandwidth:
    ```
-   offRatio = min(0.95, vram / need)     // Fraction of model in VRAM
-   effBw = offRatio × gpuBw + (1 - offRatio) × 40   // 40 = CPU RAM bandwidth
-   TPS = effBw / (effectivePb × bytesPerParam × 1.15)
+   offRatio = min(0.95, availableVram / need)     // Fraction of model in VRAM
+   
+   // Harmonic mean: devices process sequentially, not in parallel
+   // B_eff = 1 / (r/B_gpu + (1-r)/B_cpu)
+   effBw = 1 / (offR / gpuBw + (1 - offR) / cpuBw)
+   
+   TPS = effBw / (activePb × bytesPerParam × 1.15)
    ```
 
 5. **Not enough total memory** → `"no"`
@@ -170,17 +187,16 @@ Four metrics calculated live when the user swaps build components:
 ### 1. Generation Speed (TPS)
 Reads selected GPU's `data-bw` and `data-type` attributes, calls `getTPS(bw, type, pb, true, totalPb) × qScale`.
 
-### 2. Time to First Token (TTFT)
-Prefill processes the entire prompt before generating. Uses a speedup multiplier based on model size:
+### 2. Time to First Token (TTFT) — Compute-Bound
+**Update**: Prefill is now compute-bound (not bandwidth-bound) on modern GPUs. Uses TFLOPS:
 
 ```js
-const prefillMult = sizePb <= 4 ? 15 : sizePb <= 14 ? 10 :
-                    sizePb <= 34 ? 7 : sizePb <= 72 ? 5 : 3;
-const prefillTPS = genTPS × prefillMult × qScale;
-ttft = 500 / prefillTPS;   // 500 = typical prompt length
+// Compute-bound prefill: TFLOPS / (2 * params in billions)
+const computeTPS = (tf * 1e12) / (2 * activePb * 1e9);
+ttft = context / computeTPS;
 ```
 
-Smaller models prefill faster relative to generation because the prompt tokens dominate the work.
+For GPUs without TFLOPS data, falls back to bandwidth-based estimation.
 
 ### 3. Load Time (Storage)
 ```
@@ -190,9 +206,27 @@ loadTime = (vram × 1024) / readSpeed
 
 ### 4. RAM Headroom
 ```
-headroom = ramGB - vram - ceil(vram × 0.15) - 4
-// model weights + 15% KV cache overhead + 4GB OS
+headroom = ramGB - vram - ceil(vram × 0.15) - 4 - kvVram
+// model weights + 15% overhead + KV cache at current context + 4GB OS
 ```
+
+## Context Length Selector
+
+Global context length selector in the header (index.html). Changing it:
+
+1. Updates `window.contextLength`
+2. Triggers re-render of hardware mode
+3. Recalculates KV cache VRAM overhead
+4. Re-runs `compat()` with new context
+
+Available options: 4K, 8K, 16K, 32K, 64K, 128K tokens.
+
+## Unified vs Discrete Memory
+
+The UI handles unified memory architectures differently:
+
+- **Apple Silicon, AMD Strix Halo, NVIDIA DGX**: RAM input is disabled in hardware mode. User enters total unified memory as "VRAM". Info notes explain this.
+- **Discrete GPUs**: Both VRAM and RAM inputs enabled. CPU offload is calculated when model doesn't fully fit in VRAM.
 
 ## Build Recommendations (`model.js`)
 
@@ -246,7 +280,7 @@ Category-specific overrides for image/video/audio/embed/medical/finance/legal mo
 
 ### Live Part Swapping
 
-Build component dropdowns have `data-*` attributes (`data-bw`, `data-type`, `data-gb`, `data-tb`). When changed:
+Build component dropdowns have `data-*` attributes (`data-bw`, `data-tf`, `data-type`, `data-gb`, `data-tb`). When changed:
 1. `onchange="window.updatePerf()"` fires
 2. `updatePerf()` reads selected options' data attributes
 3. Recalculates TPS, TTFT, load time, RAM headroom
@@ -262,11 +296,27 @@ window.activeQuant   // "q4" | "q8" | "fp16"
 window._buildVram    // VRAM needed for current quant (for perf calc)
 window._hwScrollY    // Scroll position saved when leaving hardware mode
 window._cameFromHardware // Flag for scroll restoration
+window.contextLength  // Global context length (default: 4096)
 ```
 
 ### PDF Generation (`pdf.js`)
 
 Opens a new window with a print-optimized HTML document containing the model's build spec and performance numbers, then calls `window.print()`. Uses `@media print` CSS for A4 formatting.
+
+## Validation Suite
+
+Run tests with `node js/validation.js`:
+
+- TPS benchmarks (Llama 3 8B, Mixtral 8x7B, Qwen 72B on various GPUs)
+- VRAM fit checks
+- CPU offload scenarios
+- KV cache VRAM calculations
+- Context length impact
+- Apple Silicon compatibility
+- Non-quantizable models (SDXL)
+- Bandwidth estimation
+
+18 tests with ±15-30% tolerance.
 
 ## Adding a New Model
 
@@ -282,3 +332,18 @@ Add one entry to the `M` array in `data.js`:
 - `c`: One of the 12 categories
 
 Then add a description to the `DESC` map keyed by the `id`.
+
+## Apple Silicon Profiles
+
+The app now includes explicit Apple SoC profiles with known bandwidths (not estimated from VRAM size):
+
+| SoC | Unified Memory | Bandwidth | TFLOPS |
+|-----|----------------|-----------|--------|
+| M3/M4 Air | 8-24GB | 100-120 GB/s | 0.5-0.6 |
+| M3 Pro | 18-36GB | 150 GB/s | 4.0 |
+| M4 Pro | 24-48GB | 273 GB/s | 6.0 |
+| M3 Max | 36-48GB | 400 GB/s | 15.0 |
+| M4 Max | 36-128GB | 546 GB/s | 18.0 |
+| M4 Ultra | 192-512GB | 819 GB/s | 38.0 |
+
+This decoupling ensures bandwidth doesn't scale linearly with RAM capacity — it stays tied to the chip tier.
