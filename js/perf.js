@@ -33,21 +33,27 @@ window.updatePerf = function() {
   if (tpsEl) tpsEl.textContent = "~" + tps + " t/s";
   if (tpsLblEl) tpsLblEl.textContent = tpsLabel;
 
-  // --- Time to First Token (GPU-bound prefill) ---
-  // Prefill processes the full prompt before generating the first output token.
-  // Bottleneck is reading all model weights through the GPU — same as generation
-  // but multiplied by prompt length. For a typical ~500 token prompt:
+  // --- Time to First Token (Compute-bound prefill) ---
+  // Prefill is compute-bound (not bandwidth-bound) on modern GPUs.
+  // TFLOPS determines prefill throughput: tokens/sec = (TFLOPS * 1e12) / (2 * params * 1e9)
+  // The "2" comes from: each param needs ~2 FLOPs per token (multiply-add)
   let ttft = 0;
   if (gpuSel) {
-    const genTPS = tps / qScale; // raw generation TPS before quant scaling
-    // Prefill throughput ≈ generation TPS * prefill speedup (batched reads are more efficient)
-    // Typical prefill is 5-15x faster than generation for small prompts.
-    // Use totalPb for sizing — MoE prefill touches all experts, not just active ones.
-    const sizePb = totalPb || activePb;
-    const prefillMult = sizePb <= 4 ? 15 : sizePb <= 14 ? 10 : sizePb <= 34 ? 7 : sizePb <= 72 ? 5 : 3;
-    const prefillTPS = genTPS * prefillMult * qScale;
-    const promptTokens = 500; // typical prompt length
-    ttft = prefillTPS > 0 ? promptTokens / prefillTPS : 0;
+    const opt = gpuSel.options[gpuSel.selectedIndex];
+    const tf = parseFloat(opt.dataset.tf) || 0;
+    const context = window.contextLength || 4096;
+    if (tf > 0) {
+      // Compute-bound prefill: TFLOPS / (2 * params in billions)
+      const computeTPS = (tf * 1e12) / (2 * activePb * 1e9);
+      ttft = context / computeTPS;
+    } else {
+      // Fallback to bandwidth-based for unknown GPUs
+      const genTPS = tps / qScale;
+      const sizePb = totalPb || activePb;
+      const prefillMult = sizePb <= 4 ? 15 : sizePb <= 14 ? 10 : sizePb <= 34 ? 7 : sizePb <= 72 ? 5 : 3;
+      const prefillTPS = genTPS * prefillMult * qScale;
+      ttft = 500 / prefillTPS;
+    }
   }
   const ttftLabel = ttft <= 0.5 ? "Instant" : ttft <= 1.5 ? "Fast — barely noticeable" : ttft <= 4 ? "Moderate — brief pause" : ttft > 0 ? "Slow — noticeable wait" : "N/A";
   const promptEl = document.getElementById("perf-prompt");
@@ -79,8 +85,10 @@ window.updatePerf = function() {
   if (ramSel) {
     const opt = ramSel.options[ramSel.selectedIndex];
     const gb = parseFloat(opt.dataset.gb) || 32;
-    // Model footprint + ~4GB OS + ~15% overhead for KV cache, runtime buffers, context
-    const overhead = Math.ceil(vram * 0.15) + 4;
+    const context = window.contextLength || 4096;
+    // Model footprint + ~4GB OS + KV cache at current context + runtime buffers
+    const kvOverhead = calcKvVram(activePb, context);
+    const overhead = Math.ceil(vram * 0.15) + 4 + kvOverhead;
     headroom = Math.max(0, gb - Math.ceil(vram) - overhead);
   }
   const ramLabel = headroom >= 32 ? "Plenty — multitask freely" : headroom >= 16 ? "Good — room for apps + context" : headroom >= 8 ? "Tight — close other apps" : headroom > 0 ? "Very tight — model only" : "Not enough RAM";

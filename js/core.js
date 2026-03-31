@@ -3,6 +3,16 @@
 // Model categories where GGUF quantization (Q4/Q8) doesn't apply
 const NO_QUANT_CATS = new Set(["image","video","audio","embed","threeD"]);
 
+// Global context length (tokens) — affects KV cache VRAM
+window.contextLength = 4096;
+
+// Calculate KV cache VRAM overhead in GB
+// Formula: (params_B / 8) * (context / 1000) * 0.012
+// Derived from: 2 layers × hidden_size × context × 2 bytes (FP16 KV) / num_layers ≈ params/8 per 1K tokens
+function calcKvVram(pb, context) {
+  return (pb / 8) * (context / 1000) * 0.012;
+}
+
 function getBackend(id) {
   return BACKENDS.find(b => b.v === id) || BACKENDS[0];
 }
@@ -27,13 +37,9 @@ function getTPS(vramOrBw, gpuType, pb, isBandwidth, totalPb) {
   // At Q4 (~0.6 bytes/param), with overhead factor for KV cache, attention, etc.
   const bytesPerParam = 0.6; // Q4 baseline — caller applies qScale for Q8/FP16
   const overhead = 1.15; // ~15% overhead for KV cache, compute, etc.
-  // MoE models: bandwidth bottleneck is closer to total weight size, not just active params.
-  // Expert weights are scattered in memory, reducing effective bandwidth utilization.
-  // Use blended size: active + 80% of inactive weights as bandwidth cost.
-  let effectivePb = pb;
-  if (totalPb && totalPb > pb * 1.5) {
-    effectivePb = pb + (totalPb - pb) * 0.8;
-  }
+  // MoE models: only active params matter for generation speed.
+  // All weights must fit in VRAM, but inference throughput scales with active params.
+  const effectivePb = pb;
   const rawTPS = bwGBs / (effectivePb * bytesPerParam * overhead);
   // Soft ceiling: small models can't fully saturate high-bandwidth GPUs due to
   // kernel launch overhead, sampling, KV cache writes, and attention compute.
@@ -64,36 +70,45 @@ function compat(m, vram, ram, gpuType, quant, backendId) {
   const need = Math.round(baseNeed * be.vramMult * 10) / 10;
   const ev = gpuType==="cpu" ? 0 : vram;
   const qScale = skipQ ? 1 : quant === "q4" ? 1 : quant === "q8" ? 0.55 : 0.3;
+
+  // KV cache VRAM overhead (only for text-based models)
+  const kvVram = skipQ ? 0 : calcKvVram(m.pb, window.contextLength || 4096);
+  const availableVram = Math.max(0, ev - kvVram);
+
   // Non-quantizable models (image/video/audio/embed/3D): fit check only, TPS not meaningful
   if (skipQ) {
-    const fits = (gpuType==="apple" || gpuType==="amd-apu" || gpuType==="nvidia-uni") ? vram >= need : (ev >= need && ram >= m.ram);
+    const fits = (gpuType==="apple" || gpuType==="amd-apu" || gpuType==="nvidia-uni") ? vram >= need : (availableVram >= need && ram >= m.ram);
     return fits ? {s:"yes", tps:0} : {s:"no", tps:0};
   }
   // Unified memory (Apple Silicon, AMD APU, NVIDIA DGX): VRAM and RAM are the same pool — no CPU offload concept
   if (gpuType==="apple" || gpuType==="amd-apu" || gpuType==="nvidia-uni") {
-    if (vram >= need) return {s:"yes", tps: Math.max(1, Math.round(getTPS(vram, gpuType, m.pb, false, totalPb) * qScale * be.tpsMult))};
+    if (vram >= need + kvVram) return {s:"yes", tps: Math.max(1, Math.round(getTPS(vram, gpuType, m.pb, false, totalPb) * qScale * be.tpsMult))};
     return {s:"no", tps:0};
   }
   const effectiveRam = ram;
-  if (ev >= need && effectiveRam >= m.ram) return {s:"yes", tps: Math.max(1, Math.round(getTPS(vram, gpuType, m.pb, false, totalPb) * qScale * be.tpsMult))};
+  if (availableVram >= need && effectiveRam >= m.ram) return {s:"yes", tps: Math.max(1, Math.round(getTPS(vram, gpuType, m.pb, false, totalPb) * qScale * be.tpsMult))};
   // CPU offload: need enough total memory (VRAM + RAM) to hold the model weights plus ~4GB OS overhead
-  const totalMem = ev + ram;
+  const totalMem = availableVram + ram;
   const needed = need + 4;
   if (totalMem >= needed) {
     // Fraction of model layers in VRAM vs RAM
-    const offR = ev > 0 ? Math.min(.95, ev / need) : 0;
+    const offR = availableVram > 0 ? Math.min(.95, availableVram / need) : 0;
     // Bytes per active param at this quant level
     const bpp = skipQ ? 2 : quant === "q4" ? 0.6 : quant === "q8" ? 1.1 : 2;
     // GPU bandwidth (estimated from VRAM size)
-    const gpuBwGBs = ev > 0 ? estimateBandwidth(vram, gpuType) : 0;
+    const gpuBwGBs = availableVram > 0 ? estimateBandwidth(vram, gpuType) : 0;
     // CPU/RAM bandwidth (~40 GB/s DDR4/DDR5 average)
     const cpuBwGBs = estimateBandwidth(0, "cpu");
-    // Effective bandwidth is weighted blend
-    const effBw = offR * gpuBwGBs + (1 - offR) * cpuBwGBs;
-    // TPS using effective params (blended for MoE) — no tpsMult for offload
-    let effPb = m.pb;
-    if (totalPb > m.pb * 1.5) effPb = m.pb + (totalPb - m.pb) * 0.8;
-    const tps = effBw / (effPb * bpp * 1.15);
+    // Effective bandwidth: harmonic mean — devices process sequentially, not in parallel
+    // B_eff = 1 / (r/B_gpu + (1-r)/B_cpu)
+    let effBw;
+    if (offR <= 0 || offR >= 1) {
+      effBw = offR >= 1 ? gpuBwGBs : cpuBwGBs;
+    } else {
+      effBw = 1 / (offR / gpuBwGBs + (1 - offR) / cpuBwGBs);
+    }
+    // TPS using active params only — MoE inference scales with active, not total
+    const tps = effBw / (m.pb * bpp * 1.15);
     return {s:"slow", tps: Math.max(1, Math.round(tps))};
   }
   return {s:"no", tps:0};

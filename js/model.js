@@ -53,75 +53,83 @@ window.onMQ = function(v) {
 const BUILDS = {
   gpus: [
     // NVIDIA consumer
-    {name:"RTX 3060 12GB",       v:12,  type:"nvidia", bw:360,  pr:280,  q:"RTX+3060+12GB"},
-    {name:"RTX 3070 8GB",        v:8,   type:"nvidia", bw:448,  pr:350,  q:"RTX+3070+8GB"},
-    {name:"RTX 3080 10GB",       v:10,  type:"nvidia", bw:760,  pr:450,  q:"RTX+3080+10GB"},
-    {name:"RTX 3090 24GB",       v:24,  type:"nvidia", bw:936,  pr:700,  q:"RTX+3090+24GB"},
-    {name:"RTX 4060 8GB",        v:8,   type:"nvidia", bw:272,  pr:300,  q:"RTX+4060+8GB"},
-    {name:"RTX 4060 Ti 16GB",    v:16,  type:"nvidia", bw:288,  pr:450,  q:"RTX+4060+Ti+16GB"},
-    {name:"RTX 4070 12GB",       v:12,  type:"nvidia", bw:504,  pr:550,  q:"RTX+4070+12GB"},
-    {name:"RTX 4070 Ti 12GB",    v:12,  type:"nvidia", bw:504,  pr:650,  q:"RTX+4070+Ti+12GB"},
-    {name:"RTX 4070 Ti Super 16GB",v:16,type:"nvidia", bw:672,  pr:780,  q:"RTX+4070+Ti+Super+16GB"},
-    {name:"RTX 4080 Super 16GB", v:16,  type:"nvidia", bw:736,  pr:950,  q:"RTX+4080+Super+16GB"},
-    {name:"RTX 4090 24GB",       v:24,  type:"nvidia", bw:1008, pr:1800, q:"RTX+4090+24GB"},
-    {name:"RTX 5070 12GB",       v:12,  type:"nvidia", bw:672,  pr:550,  q:"RTX+5070+12GB"},
-    {name:"RTX 5070 Ti 16GB",    v:16,  type:"nvidia", bw:896,  pr:850,  q:"RTX+5070+Ti+16GB"},
-    {name:"RTX 5080 16GB",       v:16,  type:"nvidia", bw:960,  pr:1000, q:"RTX+5080+16GB"},
-    {name:"RTX 5090 32GB",       v:32,  type:"nvidia", bw:1792, pr:2000, q:"RTX+5090+32GB"},
+    {name:"RTX 3060 12GB",       v:12,  type:"nvidia", bw:360,  pr:280,  q:"RTX+3060+12GB", tf:13.2},
+    {name:"RTX 3070 8GB",        v:8,   type:"nvidia", bw:448,  pr:350,  q:"RTX+3070+8GB", tf:20.3},
+    {name:"RTX 3080 10GB",       v:10,  type:"nvidia", bw:760,  pr:450,  q:"RTX+3080+10GB", tf:29.7},
+    {name:"RTX 3090 24GB",       v:24,  type:"nvidia", bw:936,  pr:700,  q:"RTX+3090+24GB", tf:35.6},
+    {name:"RTX 4060 8GB",        v:8,   type:"nvidia", bw:272,  pr:300,  q:"RTX+4060+8GB", tf:15.1},
+    {name:"RTX 4060 Ti 16GB",    v:16,  type:"nvidia", bw:288,  pr:450,  q:"RTX+4060+Ti+16GB", tf:15.1},
+    {name:"RTX 4070 12GB",       v:12,  type:"nvidia", bw:504,  pr:550,  q:"RTX+4070+12GB", tf:29.2},
+    {name:"RTX 4070 Ti 12GB",    v:12,  type:"nvidia", bw:504,  pr:650,  q:"RTX+4070+Ti+12GB", tf:29.2},
+    {name:"RTX 4070 Ti Super 16GB",v:16,type:"nvidia", bw:672,  pr:780,  q:"RTX+4070+Ti+Super+16GB", tf:44.0},
+    {name:"RTX 4080 Super 16GB", v:16,  type:"nvidia", bw:736,  pr:950,  q:"RTX+4080+Super+16GB", tf:48.7},
+    {name:"RTX 4090 24GB",       v:24,  type:"nvidia", bw:1008, pr:1800, q:"RTX+4090+24GB", tf:82.6},
+    {name:"RTX 5070 12GB",       v:12,  type:"nvidia", bw:672,  pr:550,  q:"RTX+5070+12GB", tf:31.0},
+    {name:"RTX 5070 Ti 16GB",    v:16,  type:"nvidia", bw:896,  pr:850,  q:"RTX+5070+Ti+16GB", tf:43.0},
+    {name:"RTX 5080 16GB",       v:16,  type:"nvidia", bw:960,  pr:1000, q:"RTX+5080+16GB", tf:50.0},
+    {name:"RTX 5090 32GB",       v:32,  type:"nvidia", bw:1792, pr:2000, q:"RTX+5090+32GB", tf:104.0},
     // NVIDIA multi-GPU
-    {name:"2x RTX 3090 24GB",    v:48,  type:"nvidia", bw:1872, pr:1400, q:"RTX+3090+24GB"},
-    {name:"2x RTX 4090 24GB",    v:48,  type:"nvidia", bw:2016, pr:3600, q:"RTX+4090+24GB"},
+    {name:"2x RTX 3090 24GB",    v:48,  type:"nvidia", bw:1872, pr:1400, q:"RTX+3090+24GB", tf:71.2},
+    {name:"2x RTX 4090 24GB",    v:48,  type:"nvidia", bw:2016, pr:3600, q:"RTX+4090+24GB", tf:165.2},
     // NVIDIA professional / datacenter
-    {name:"RTX A6000 48GB",      v:48,  type:"nvidia", bw:768,  pr:3500, q:"NVIDIA+RTX+A6000+48GB"},
-    {name:"NVIDIA A100 80GB",    v:80,  type:"nvidia", bw:2039, pr:8000, q:"NVIDIA+A100+80GB"},
-    {name:"NVIDIA H100 80GB",    v:80,  type:"nvidia", bw:3350, pr:25000,q:"NVIDIA+H100+80GB"},
-    {name:"2x NVIDIA A100 80GB", v:160, type:"nvidia", bw:4078, pr:16000,q:"NVIDIA+A100+80GB"},
-    {name:"2x NVIDIA H100 80GB", v:160, type:"nvidia", bw:6700, pr:50000,q:"NVIDIA+H100+80GB"},
-    {name:"NVIDIA L40S 48GB",    v:48,  type:"nvidia", bw:864,  pr:10000,q:"NVIDIA+L40S+48GB"},
-    {name:"RTX PRO 6000 96GB",   v:96,  type:"nvidia", bw:1800, pr:6800, q:"NVIDIA+RTX+PRO+6000+96GB"},
+    {name:"RTX A6000 48GB",      v:48,  type:"nvidia", bw:768,  pr:3500, q:"NVIDIA+RTX+A6000+48GB", tf:38.7},
+    {name:"NVIDIA A100 80GB",    v:80,  type:"nvidia", bw:2039, pr:8000, q:"NVIDIA+A100+80GB", tf:312.0},
+    {name:"NVIDIA H100 80GB",    v:80,  type:"nvidia", bw:3350, pr:25000,q:"NVIDIA+H100+80GB", tf:513.0},
+    {name:"2x NVIDIA A100 80GB", v:160, type:"nvidia", bw:4078, pr:16000,q:"NVIDIA+A100+80GB", tf:624.0},
+    {name:"2x NVIDIA H100 80GB", v:160, type:"nvidia", bw:6700, pr:50000,q:"NVIDIA+H100+80GB", tf:1026.0},
+    {name:"NVIDIA L40S 48GB",    v:48,  type:"nvidia", bw:864,  pr:10000,q:"NVIDIA+L40S+48GB", tf:91.0},
+    {name:"RTX PRO 6000 96GB",   v:96,  type:"nvidia", bw:1800, pr:6800, q:"NVIDIA+RTX+PRO+6000+96GB", tf:96.0},
     // AMD
-    {name:"RX 7800 XT 16GB",     v:16,  type:"amd",    bw:624,  pr:450,  q:"AMD+RX+7800+XT+16GB"},
-    {name:"RX 7900 XT 20GB",     v:20,  type:"amd",    bw:800,  pr:650,  q:"AMD+RX+7900+XT+20GB"},
-    {name:"RX 7900 XTX 24GB",    v:24,  type:"amd",    bw:960,  pr:850,  q:"AMD+RX+7900+XTX+24GB"},
-    {name:"RX 9070 XT 16GB",     v:16,  type:"amd",    bw:650,  pr:550,  q:"AMD+RX+9070+XT+16GB"},
-    {name:"AMD MI300X 192GB",    v:192, type:"amd",    bw:5300, pr:15000,q:"AMD+Instinct+MI300X"},
+    {name:"RX 7800 XT 16GB",     v:16,  type:"amd",    bw:624,  pr:450,  q:"AMD+RX+7800+XT+16GB", tf:24.0},
+    {name:"RX 7900 XT 20GB",     v:20,  type:"amd",    bw:800,  pr:650,  q:"AMD+RX+7900+XT+20GB", tf:28.0},
+    {name:"RX 7900 XTX 24GB",    v:24,  type:"amd",    bw:960,  pr:850,  q:"AMD+RX+7900+XTX+24GB", tf:29.7},
+    {name:"RX 9070 XT 16GB",     v:16,  type:"amd",    bw:650,  pr:550,  q:"AMD+RX+9070+XT+16GB", tf:25.0},
+    {name:"AMD MI300X 192GB",    v:192, type:"amd",    bw:5300, pr:15000,q:"AMD+Instinct+MI300X", tf:98.0},
     // Intel
-    {name:"Intel Arc A750 8GB",   v:8,   type:"intel",  bw:512,  pr:200,  q:"Intel+Arc+A750+8GB"},
-    {name:"Intel Arc B580 12GB",  v:12,  type:"intel",  bw:456,  pr:250,  q:"Intel+Arc+B580+12GB"},
-    {name:"Intel Arc A770 16GB",  v:16,  type:"intel",  bw:560,  pr:300,  q:"Intel+Arc+A770+16GB"},
+    {name:"Intel Arc A750 8GB",   v:8,   type:"intel",  bw:512,  pr:200,  q:"Intel+Arc+A750+8GB", tf:13.5},
+    {name:"Intel Arc B580 12GB",  v:12,  type:"intel",  bw:456,  pr:250,  q:"Intel+Arc+B580+12GB", tf:14.2},
+    {name:"Intel Arc A770 16GB",   v:16,  type:"intel",  bw:560,  pr:300,  q:"Intel+Arc+A770+16GB", tf:17.8},
     // AMD APU Unified
-    {name:"Strix Halo 96GB",     v:96,  type:"amd-apu", bw:256, pr:2500, q:"AMD+Strix+Halo+96GB"},
-    {name:"Strix Halo 128GB",    v:128, type:"amd-apu", bw:256, pr:3000, q:"AMD+Strix+Halo+128GB"},
+    {name:"Strix Halo 96GB",     v:96,  type:"amd-apu", bw:256, pr:2500, q:"AMD+Strix+Halo+96GB", tf:18.0},
+    {name:"Strix Halo 128GB",    v:128, type:"amd-apu", bw:256, pr:3000, q:"AMD+Strix+Halo+128GB", tf:18.0},
     // NVIDIA Unified
-    {name:"DGX Spark 128GB",     v:128, type:"nvidia-uni", bw:273, pr:3000, q:"NVIDIA+DGX+Spark"},
-    // Apple — MacBook Air (M3/M4 base, 100 GB/s)
-    {name:"MacBook Air M3/M4 8GB",  v:8,   type:"apple", bw:100, pr:1100, q:"MacBook+Air+M4+8GB"},
-    {name:"MacBook Air M3/M4 16GB", v:16,  type:"apple", bw:100, pr:1200, q:"MacBook+Air+M4+16GB"},
-    {name:"MacBook Air M3/M4 24GB", v:24,  type:"apple", bw:100, pr:1300, q:"MacBook+Air+M4+24GB"},
-    // Apple — MacBook Pro / Mac Mini Pro (M3 Pro/M4 Pro, 150 GB/s)
-    {name:"MacBook Pro M3 Pro 18GB", v:18, type:"apple", bw:150, pr:1600, q:"MacBook+Pro+M3+Pro+18GB"},
-    {name:"MacBook Pro M3 Pro 36GB", v:36, type:"apple", bw:150, pr:2200, q:"MacBook+Pro+M3+Pro+36GB"},
-    {name:"MacBook Pro M4 Pro 24GB", v:24, type:"apple", bw:150, pr:2000, q:"MacBook+Pro+M4+Pro+24GB"},
-    {name:"MacBook Pro M4 Pro 48GB", v:48, type:"apple", bw:150, pr:2500, q:"MacBook+Pro+M4+Pro+48GB"},
-    // Apple — MacBook Pro / Mac Studio Max (M4 Max 546 GB/s, M3 Max 400 GB/s)
-    {name:"MacBook Pro M4 Max 36GB", v:36, type:"apple", bw:546, pr:2500, q:"MacBook+Pro+M4+Max+36GB"},
-    {name:"MacBook Pro M4 Max 48GB", v:48, type:"apple", bw:546, pr:3000, q:"MacBook+Pro+M4+Max+48GB"},
-    {name:"MacBook Pro M4 Max 64GB", v:64, type:"apple", bw:546, pr:3500, q:"MacBook+Pro+M4+Max+64GB"},
-    {name:"MacBook Pro M4 Max 128GB",v:128,type:"apple", bw:546, pr:4500, q:"MacBook+Pro+M4+Max+128GB"},
-    // Apple — Mac Mini (M4 base / M4 Pro)
-    {name:"Mac Mini M4 16GB",        v:16, type:"apple", bw:120, pr:700,  q:"Mac+Mini+M4+16GB"},
-    {name:"Mac Mini M4 Pro 24GB",    v:24, type:"apple", bw:273, pr:1200, q:"Mac+Mini+M4+Pro+24GB"},
-    {name:"Mac Mini M4 Pro 48GB",    v:48, type:"apple", bw:273, pr:1400, q:"Mac+Mini+M4+Pro+48GB"},
-    // Apple — Mac Studio (M4 Max 546 GB/s / M4 Ultra 819 GB/s)
-    {name:"Mac Studio M4 Max 36GB",  v:36, type:"apple", bw:546, pr:2200, q:"Mac+Studio+M4+Max"},
-    {name:"Mac Studio M4 Max 64GB",  v:64, type:"apple", bw:546, pr:2800, q:"Mac+Studio+M4+Max+64GB"},
-    {name:"Mac Studio M4 Max 128GB", v:128,type:"apple", bw:546, pr:3500, q:"Mac+Studio+M4+Max+128GB"},
-    {name:"Mac Studio M4 Ultra 192GB",v:192,type:"apple",bw:819, pr:4000, q:"Mac+Studio+M4+Ultra"},
-    {name:"Mac Studio M4 Ultra 256GB",v:256,type:"apple",bw:819, pr:5000, q:"Mac+Studio+M4+Ultra+256GB"},
-    // Apple — Mac Pro
-    {name:"Mac Pro M3 Ultra 192GB",  v:192,type:"apple", bw:819, pr:3500, q:"Mac+Pro+M3+Ultra+192GB"},
-    {name:"Mac Pro M3 Ultra 256GB",  v:256,type:"apple", bw:819, pr:5500, q:"Mac+Pro+M3+Ultra+256GB"},
-    {name:"Mac Pro M3 Ultra 512GB",  v:512,type:"apple", bw:819, pr:8000, q:"Mac+Pro+M3+Ultra+512GB"},
+    {name:"DGX Spark 128GB",     v:128, type:"nvidia-uni", bw:273, pr:3000, q:"NVIDIA+DGX+Spark", tf:20.0},
+    // Apple — MacBook Air (M3/M4, 100 GB/s, ~0.5 TFLOPS)
+    {name:"MacBook Air M3 8GB",    v:8,   type:"apple", bw:100, pr:1100, q:"MacBook+Air+M4+8GB", tf:0.5},
+    {name:"MacBook Air M3 16GB",   v:16,  type:"apple", bw:100, pr:1200, q:"MacBook+Air+M4+16GB", tf:0.5},
+    {name:"MacBook Air M3 24GB",   v:24,  type:"apple", bw:100, pr:1300, q:"MacBook+Air+M4+24GB", tf:0.5},
+    {name:"MacBook Air M4 8GB",    v:8,   type:"apple", bw:120, pr:999,  q:"MacBook+Air+M4+8GB", tf:0.6},
+    {name:"MacBook Air M4 16GB",   v:16,  type:"apple", bw:120, pr:1099, q:"MacBook+Air+M4+16GB", tf:0.6},
+    {name:"MacBook Air M4 24GB",   v:24,  type:"apple", bw:120, pr:1299, q:"MacBook+Air+M4+24GB", tf:0.6},
+    // Apple — MacBook Pro M3 Pro (150 GB/s, ~4.0 TFLOPS)
+    {name:"MacBook Pro M3 Pro 18GB", v:18, type:"apple", bw:150, pr:1600, q:"MacBook+Pro+M3+Pro+18GB", tf:4.0},
+    {name:"MacBook Pro M3 Pro 36GB", v:36, type:"apple", bw:150, pr:2200, q:"MacBook+Pro+M3+Pro+36GB", tf:4.0},
+    // Apple — MacBook Pro M4 Pro (273 GB/s, ~6.0 TFLOPS)
+    {name:"MacBook Pro M4 Pro 24GB", v:24, type:"apple", bw:273, pr:2000, q:"MacBook+Pro+M4+Pro+24GB", tf:6.0},
+    {name:"MacBook Pro M4 Pro 48GB", v:48, type:"apple", bw:273, pr:2500, q:"MacBook+Pro+M4+Pro+48GB", tf:6.0},
+    // Apple — MacBook Pro M3 Max (400 GB/s, ~15.0 TFLOPS)
+    {name:"MacBook Pro M3 Max 36GB", v:36, type:"apple", bw:400, pr:2500, q:"MacBook+Pro+M3+Max+36GB", tf:15.0},
+    {name:"MacBook Pro M3 Max 48GB", v:48, type:"apple", bw:400, pr:3000, q:"MacBook+Pro+M3+Max+48GB", tf:15.0},
+    // Apple — MacBook Pro M4 Max (546 GB/s, ~18.0 TFLOPS)
+    {name:"MacBook Pro M4 Max 36GB", v:36, type:"apple", bw:546, pr:2500, q:"MacBook+Pro+M4+Max+36GB", tf:18.0},
+    {name:"MacBook Pro M4 Max 48GB", v:48, type:"apple", bw:546, pr:3000, q:"MacBook+Pro+M4+Max+48GB", tf:18.0},
+    {name:"MacBook Pro M4 Max 64GB", v:64, type:"apple", bw:546, pr:3500, q:"MacBook+Pro+M4+Max+64GB", tf:18.0},
+    {name:"MacBook Pro M4 Max 128GB",v:128,type:"apple", bw:546, pr:4500, q:"MacBook+Pro+M4+Max+128GB", tf:18.0},
+    // Apple — Mac Mini M4 (120 GB/s, ~0.6 TFLOPS)
+    {name:"Mac Mini M4 16GB",        v:16, type:"apple", bw:120, pr:700,  q:"Mac+Mini+M4+16GB", tf:0.6},
+    {name:"Mac Mini M4 Pro 24GB",    v:24, type:"apple", bw:273, pr:1200, q:"Mac+Mini+M4+Pro+24GB", tf:6.0},
+    {name:"Mac Mini M4 Pro 48GB",    v:48, type:"apple", bw:273, pr:1400, q:"Mac+Mini+M4+Pro+48GB", tf:6.0},
+    // Apple — Mac Studio M4 Max (546 GB/s, ~18.0 TFLOPS)
+    {name:"Mac Studio M4 Max 36GB",  v:36, type:"apple", bw:546, pr:2200, q:"Mac+Studio+M4+Max", tf:18.0},
+    {name:"Mac Studio M4 Max 64GB",  v:64, type:"apple", bw:546, pr:2800, q:"Mac+Studio+M4+Max+64GB", tf:18.0},
+    {name:"Mac Studio M4 Max 128GB", v:128,type:"apple", bw:546, pr:3500, q:"Mac+Studio+M4+Max+128GB", tf:18.0},
+    // Apple — Mac Studio M4 Ultra (819 GB/s, ~38.0 TFLOPS)
+    {name:"Mac Studio M4 Ultra 192GB",v:192,type:"apple",bw:819, pr:4000, q:"Mac+Studio+M4+Ultra", tf:38.0},
+    {name:"Mac Studio M4 Ultra 256GB",v:256,type:"apple",bw:819, pr:5000, q:"Mac+Studio+M4+Ultra+256GB", tf:38.0},
+    // Apple — Mac Pro M3 Ultra (819 GB/s, ~38.0 TFLOPS)
+    {name:"Mac Pro M3 Ultra 192GB",  v:192,type:"apple", bw:819, pr:3500, q:"Mac+Pro+M3+Ultra+192GB", tf:38.0},
+    {name:"Mac Pro M3 Ultra 256GB",  v:256,type:"apple", bw:819, pr:5500, q:"Mac+Pro+M3+Ultra+256GB", tf:38.0},
+    {name:"Mac Pro M3 Ultra 512GB",  v:512,type:"apple", bw:819, pr:8000, q:"Mac+Pro+M3+Ultra+512GB", tf:38.0},
   ],
   cpus: [
     {name:"Intel i5-13400F",     tier:0, pr:180, q:"Intel+i5-13400F"},
@@ -467,11 +475,11 @@ window.renderQuant = function(r, m) {
     specCard = `<div class="build-card"><div class="build-row"><span class="tnone">No single-system build available — requires multi-node cluster</span></div></div>`;
   } else if (isUnifiedBuild) {
     specCard = `<div class="build-card">
-      ${partRow("System", gpuOpts, recGpuName, "name", g => " (" + g.v + "GB)", g => ' data-v="'+g.v+'" data-bw="'+g.bw+'" data-type="'+(g.type||"apple")+'"')}
+      ${partRow("System", gpuOpts, recGpuName, "name", g => " (" + g.v + "GB)", g => ' data-v="'+g.v+'" data-bw="'+g.bw+'" data-tf="'+(g.tf||0)+'" data-type="'+(g.type||"apple")+'"')}
     </div>`;
   } else {
     specCard = `<div class="build-card">
-      ${partRow("GPU", gpuOpts, recGpuName, "name", g => " (" + g.v + "GB)", g => ' data-v="'+g.v+'" data-bw="'+g.bw+'" data-type="'+(g.type||"nvidia")+'"')}
+      ${partRow("GPU", gpuOpts, recGpuName, "name", g => " (" + g.v + "GB)", g => ' data-v="'+g.v+'" data-bw="'+g.bw+'" data-tf="'+(g.tf||0)+'" data-type="'+(g.type||"nvidia")+'"')}
       ${partRow("CPU", BUILDS.cpus, recCpuName, "name", null, c => ' data-tier="'+c.tier+'"')}
       ${partRow("Mobo", BUILDS.mobos, recMoboName, "name", null, null)}
       ${partRow("RAM", ramOpts, recRamName, "name", r => " (" + r.gb + "GB)", r => ' data-gb="'+r.gb+'"')}
