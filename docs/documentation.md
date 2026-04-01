@@ -8,22 +8,24 @@ A zero-dependency, client-only SPA that tells you what hardware you need for 275
 ├── index.html          # Entry point — loads scripts in dependency order
 ├── css/style.css       # Dark mode stylesheet
 └── js/
-    ├── data.js         # 1. Model database (M array) + constants
-    ├── core.js         # 2. Calculation engine (VRAM, TPS, bandwidth)
-    ├── hardware.js     # 3. Hardware mode rendering + filtering
-    ├── model.js        # 4. Model analysis + build recommendations
-    ├── perf.js         # 5. Live performance estimation updates
-    ├── pdf.js          # 6. Spec sheet PDF via print window
-    ├── modal.js        # 7. Contact form modal
-    ├── app.js          # 8. Init, mode switching, context selector, social sharing
-    └── validation.js    # Test suite (run with `node js/validation.js`)
+    ├── constants.js    # 1. App-wide constants (VRAM_O, RAM_O, BACKENDS, GPU_T, CATS, CAT_STYLE, AFF)
+    ├── models.js       # 2. Model database (M array, 275+ entries)
+    ├── desc.js         # 3. Model descriptions (DESC map + getDesc())
+    ├── core.js         # 4. Calculation engine (VRAM, TPS, bandwidth, KV cache)
+    ├── hardware.js     # 5. Hardware mode rendering + filtering
+    ├── model.js        # 6. Model analysis + build recommendations
+    ├── perf.js         # 7. Live performance estimation updates
+    ├── pdf.js          # 8. Spec sheet PDF via print window
+    ├── modal.js        # 9. Contact form modal
+    ├── app.js          # 10. Init, mode switching, context selector, social sharing
+    └── validation.js   # Test suite (run with `node js/validation.js`)
 ```
 
 Scripts load in dependency order at the bottom of `index.html`. Each file adds functions to `window`.
 
 ## Data Structures
 
-### Model Database (`M` array in `data.js`)
+### Model Database (`M` array in `models.js`)
 
 Every model is a plain object with 7 fields:
 
@@ -59,23 +61,23 @@ BUILDS.coolers// 3 coolers: {name, tier(0-2), pr, q}
 BUILDS.cases  // 6 cases: {name, size, q}
 ```
 
-### Constants
+### Constants (`constants.js`)
 
 ```js
+AFF      // Affiliate tag for Amazon links
 VRAM_O   // [0,2,4,6,8,10,12,16,18,20,24,32,36,40,48,64,80,96,128,...]
 RAM_O    // [4,8,12,16,24,32,48,64,96,128,256,512]
-
-BACKENDS // Inference backends with VRAM overhead and speed multipliers:
-//   llamacpp: 1.0x VRAM, 1.0x TPS
-//   vllm:     1.35x VRAM, 1.15x TPS (pre-allocates KV cache but batched)
-//   tgi:      1.25x VRAM, 1.10x TPS
-//   sglang:   1.30x VRAM, 1.15x TPS
-//   mlxlm:    1.0x VRAM, 1.15x TPS (Apple Metal optimized)
-
+BACKENDS // Inference backends with VRAM overhead and speed multipliers
 GPU_T    // Hardware types: nvidia, nvidia-uni, amd, amd-apu, intel, apple, cpu
+CATS     // Category display names
+CAT_STYLE// Category badge colors
+```
 
-NO_QUANT_CATS // Set(["image","video","audio","embed","threeD"])
-// These model types run at FP16 only — GGUF quantization doesn't apply
+### Model Descriptions (`desc.js`)
+
+```js
+DESC     // Map of model ID → human-readable description
+getDesc(m) // Fallback generator for models not in DESC
 ```
 
 ## The Calculation Engine
@@ -320,7 +322,7 @@ Run tests with `node js/validation.js`:
 
 ## Adding a New Model
 
-Add one entry to the `M` array in `data.js`:
+Add one entry to the `M` array in `models.js`:
 
 ```js
 {id:"org/model-name", n:"Display Name", f:"Family", p:"7B", pb:7, vram:4.2, ram:8, c:"general"}
@@ -331,7 +333,7 @@ Add one entry to the `M` array in `data.js`:
 - `ram`: Minimum system RAM for CPU offload
 - `c`: One of the 12 categories
 
-Then add a description to the `DESC` map keyed by the `id`.
+Then add a description to the `DESC` map in `desc.js` keyed by the `id`.
 
 ## Apple Silicon Profiles
 
